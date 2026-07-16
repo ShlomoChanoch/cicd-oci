@@ -42,6 +42,7 @@ jobs:
           name: build-assets
           path: |
             requirements.txt
+            coverage.xml
 
       - name: Notify Failure (Slack)
         if: failure()
