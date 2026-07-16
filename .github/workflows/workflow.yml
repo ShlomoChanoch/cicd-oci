@@ -43,8 +43,8 @@ jobs:
         with:
           name: build-assets
           path: |
-            dist/
-            coverage/
+            requirements.txt
+            test_dummy.py
 
       - name: Notify Failure (Slack)
         if: failure()
