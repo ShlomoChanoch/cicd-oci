@@ -1,0 +1,179 @@
+name: CI/CD Pipeline - Build, Security & Push to OCIR
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+env:
+  OCI_REGISTRY: iad.ocir.io 
+  OCI_REPOSITORY: cicd-oci
+  OCI_TENANCY_NAMESPACE: ${{ vars.OCI_TENANCY_NAMESPACE }}
+  IMAGE_NAME: app-producao
+
+jobs:
+  # ----------------------------------------------------
+  # 1. BUILD & TEST (Execução paralela/inicial)
+  # ----------------------------------------------------
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r requirements.txt
+
+      - name: Run Unit Tests with Coverage
+        run: |
+          pip install pytest pytest-cov
+          pytest --cov=. --cov-report=xml
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-assets
+          path: |
+            dist/
+            coverage/
+
+      - name: Notify Failure (Slack)
+        if: failure()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: '{"text": "❌ Falha na compilação ou nos testes unitários!"}'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # ----------------------------------------------------
+  # 2. SONARQUBE ANALYSIS (Quality Gate)
+  # ----------------------------------------------------
+  sonarqube:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-assets
+
+      - name: SonarQube Scan
+        uses: sonarsource/sonarcloud-github-action@v3.1.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      - name: SonarQube Quality Gate Check
+        uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Notify Failure (Slack)
+        if: failure()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: '{"text": "❌ O código quebrou o Quality Gate do SonarQube!"}'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # ----------------------------------------------------
+  # 3. TRIVY FS SCAN (Escaneamento de Dependências antes do Build)
+  # ----------------------------------------------------
+  trivy-fs:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          exit-code: '1'
+          severity: 'CRITICAL'
+
+      - name: Notify Failure (Slack)
+        if: failure()
+        uses: slackapi/slack-github-action@v3.0.0
+        with:
+          payload: '{"text": "❌ Vulnerabilidades críticas de dependências encontradas pelo Trivy (FS)!"}'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # ----------------------------------------------------
+  # 4. BUILD DOCKER IMAGE & TRIVY IMAGE SCAN
+  # ----------------------------------------------------
+  build-and-scan-image:
+    runs-on: ubuntu-latest
+    needs: [sonarqube, trivy-fs]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Docker Meta (Tags Generation)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.OCI_REGISTRY }}/${{ env.OCI_TENANCY_NAMESPACE }}/${{ env.OCI_REPOSITORY }}
+          tags: |
+            type=sha,format=long,prefix=
+            type=raw,value=latest
+
+      - name: Build Local Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: app-local-test:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Trivy Vulnerability Scanner (Image)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: 'app-local-test:latest'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Log in to Oracle Cloud OCIR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.OCI_REGISTRY }}
+          username: ${{ secrets.OCI_USERNAME }}
+          password: ${{ secrets.OCI_AUTH_TOKEN }}
+
+      - name: Push Docker Image to OCIR
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha,mode=max
+
+      - name: Notify Failure (Slack)
+        if: failure()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: '{"text": "❌ Falha no Build Docker, no escaneamento do Trivy Image ou no Push para o OCIR!"}'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
