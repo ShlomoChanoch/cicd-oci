@@ -20,34 +20,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Environment
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@0b93645e9fae5d1229c542f1902615627579b20e # v5.3.0
         with:
           python-version: '3.13'
           cache: 'pip'
 
       - name: Install Dependencies
         run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install -r requirements.txt
+          python3 -m pip install --no-cache-dir --only-binary :all: -r requirements.txt
 
       - name: Run Unit Tests with Coverage
         run: |
-          pip install pytest pytest-cov
           pytest --cov=. --cov-report=xml
 
       - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea2dfcf01b1a5e20e6e025910 # v4.4.3
         with:
           name: build-assets
           path: |
-            requirements.txt
+            coverage.xml
 
       - name: Notify Failure (Slack)
         if: failure()
-        uses: slackapi/slack-github-action@v1.26.0
+        uses: slackapi/slack-github-action@485a9d42d3416a10f8285cb051af2b32ff0910ee # v1.26.0
         with:
           payload: '{"text": "❌ Falha na compilação ou nos testes unitários!"}'
         env:
@@ -61,30 +59,30 @@ jobs:
     needs: build-and-test
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
 
       - name: Download Build Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372ec9393e8 # v4.1.8
         with:
           name: build-assets
 
       - name: SonarQube Scan
-        uses: sonarsource/sonarcloud-github-action@v3.1.0
+        uses: sonarsource/sonarcloud-github-action@02efb1cdab13bc924040997f7481ca10b64f3322 # v3.1.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
       - name: SonarQube Quality Gate Check
-        uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
+        uses: sonarsource/sonarqube-quality-gate-action@d301ac165972d3f739029a8a798a3e79e6005747 # v1.1.0
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       - name: Notify Failure (Slack)
         if: failure()
-        uses: slackapi/slack-github-action@v1.26.0
+        uses: slackapi/slack-github-action@485a9d42d3416a10f8285cb051af2b32ff0910ee # v1.26.0
         with:
           payload: '{"text": "❌ O código quebrou o Quality Gate do SonarQube!"}'
         env:
@@ -98,10 +96,10 @@ jobs:
     needs: build-and-test
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Run Trivy Vulnerability Scanner
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@18f25ab6ee4e2d815d69c4b1638298c89f15d7bc # v0.36.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -110,7 +108,7 @@ jobs:
 
       - name: Notify Failure (Slack)
         if: failure()
-        uses: slackapi/slack-github-action@v3.0.0
+        uses: slackapi/slack-github-action@e28cf165c97005e6082d549042b5a4824ddf03c8 # v3.0.0
         with:
           payload: '{"text": "❌ Vulnerabilidades críticas de dependências encontradas pelo Trivy (FS)!"}'
         env:
@@ -124,14 +122,14 @@ jobs:
     needs: [sonarqube, trivy-fs]
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@c199fb12102e2c513e84ca5d011e0f7619241ec7 # v3.7.1
 
       - name: Docker Meta (Tags Generation)
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@369eb22cf400264a50ee99f01340472400002a0a # v5.5.1
         with:
           images: ${{ env.OCI_REGISTRY }}/${{ env.OCI_TENANCY_NAMESPACE }}/${{ env.OCI_REPOSITORY }}
           tags: |
@@ -139,7 +137,7 @@ jobs:
             type=raw,value=latest
 
       - name: Build Local Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@ca2196b631208221c2419f1d04355931d75ff336 # v6.10.0
         with:
           context: .
           load: true
@@ -148,21 +146,21 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Run Trivy Vulnerability Scanner (Image)
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@18f25ab6ee4e2d815d69c4b1638298c89f15d7bc # v0.36.0
         with:
           image-ref: 'app-local-test:latest'
           exit-code: '1'
           severity: 'CRITICAL,HIGH'
 
       - name: Log in to Oracle Cloud OCIR
-        uses: docker/login-action@v3
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
         with:
           registry: ${{ env.OCI_REGISTRY }}
           username: ${{ secrets.OCI_USERNAME }}
           password: ${{ secrets.OCI_AUTH_TOKEN }}
 
       - name: Push Docker Image to OCIR
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@ca2196b631208221c2419f1d04355931d75ff336 # v6.10.0
         with:
           context: .
           push: true
@@ -171,7 +169,7 @@ jobs:
 
       - name: Notify Failure (Slack)
         if: failure()
-        uses: slackapi/slack-github-action@v1.26.0
+        uses: slackapi/slack-github-action@485a9d42d3416a10f8285cb051af2b32ff0910ee # v1.26.0
         with:
           payload: '{"text": "❌ Falha no Build Docker, no escaneamento do Trivy Image ou no Push para o OCIR!"}'
         env:
