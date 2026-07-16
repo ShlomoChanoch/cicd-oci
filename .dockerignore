@@ -1,0 +1,22 @@
+# Ignorar Git e configurações
+.git
+.github
+.gitignore
+
+# Ignorar ambientes virtuais e cache do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv
+venv
+ENV
+
+# Ignorar testes e relatórios do Sonar/Pytest
+.pytest_cache
+.scannerwork
+coverage.xml
+test_api.py
+
+# Ignorar variáveis de ambiente locais
+.env
