@@ -30,12 +30,10 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install -r requirements.txt
+          python3 -m pip install --no-cache-dir --only-binary :all: -r requirements.txt
 
       - name: Run Unit Tests with Coverage
         run: |
-          pip install pytest pytest-cov
           pytest --cov=. --cov-report=xml
 
       - name: Upload Build Artifacts
