@@ -2,7 +2,7 @@ FROM python:3.13-slim
 
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends gcc g++ && \
+    apt-get install -y --no-install-recommends gcc g++ perl perl-base && \
     apt-get clean && \
     groupadd -r appgroup && \
     useradd -r -g appgroup -s /sbin/nologin appuser && \
