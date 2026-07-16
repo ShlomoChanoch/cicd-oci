@@ -6,9 +6,9 @@ WORKDIR /app
 
 COPY requirements.txt .
 
-RUN pip install --no-cache-dir --only-binary :all: -r requirements.txt
+RUN /usr/local/bin/pip install --no-cache-dir --only-binary :all: -r requirements.txt
 
-COPY --chown=appuser:appgroup api.py .
+COPY api.py .
 
 USER appuser
 
