@@ -3,7 +3,11 @@ FROM python:3.13-slim
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends gcc g++ && \
-    apt-get clean
+    apt-get clean && \
+    apt-get remove -y --purge gcc g++ && \
+    apt-get autoremove -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN groupadd -r appgroup && useradd -r -g appgroup -s /sbin/nologin appuser
 
@@ -11,13 +15,8 @@ WORKDIR /app
 
 COPY requirements.txt .
 
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir --only-binary :all: --require-hashes -r requirements.txt
-
-RUN apt-get remove -y --purge gcc g++ && \
-    apt-get autoremove -y && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN pip install --no-cache-dir --only-binary :all: pip==24.2 && \
+    pip install --no-cache-dir --only-binary :all: -r requirements.txt
 
 COPY api.py .
 
