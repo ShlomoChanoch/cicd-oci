@@ -3,6 +3,8 @@ from pydantic import BaseModel
 
 app = FastAPI(title="Hello API", description="API que retorna saudações personalizadas")
 
+HELLO_WORLD = "Hello World!"
+
 class HelloRequest(BaseModel):
     name: str
 
@@ -13,7 +15,7 @@ def hello_get(name: str = ""):
     Se o nome for vazio, retorna "Hello World!"
     """
     if not name.strip():
-        return {"message": "Hello World!"}
+        return {"message": HELLO_WORLD}
     return {"message": f"Hello, {name}."}
 
 @app.post("/hello")
@@ -23,7 +25,7 @@ def hello_post(request: HelloRequest):
     Se o nome for vazio, retorna "Hello World!"
     """
     if not request.name.strip():
-        return {"message": "Hello World!"}
+        return {"message": HELLO_WORLD}
     return {"message": f"Hello, {request.name}."}
 
 @app.post("/")
@@ -33,5 +35,5 @@ def hello_post_simple(name: str = ""):
     Se o nome for vazio, retorna "Hello World!"
     """
     if not name.strip():
-        return {"message": "Hello World!"}
+        return {"message": HELLO_WORLD}
     return {"message": f"Hello, {name}."}
