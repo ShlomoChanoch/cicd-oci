@@ -44,7 +44,6 @@ jobs:
           name: build-assets
           path: |
             requirements.txt
-            test_dummy.py
 
       - name: Notify Failure (Slack)
         if: failure()
