@@ -2,11 +2,11 @@ FROM python:3.13-slim
 
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends gcc g++ perl perl-base && \
+    apt-get install -y --no-install-recommends gcc g++ && \
     apt-get clean && \
     groupadd -r appgroup && \
     useradd -r -g appgroup -s /sbin/nologin appuser && \
-    apt-get remove -y --purge gcc g++ perl perl-base && \
+    apt-get remove -y --purge gcc g++ && \
     apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
