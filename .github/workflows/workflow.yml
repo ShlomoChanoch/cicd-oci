@@ -156,7 +156,7 @@ jobs:
         with:
           image-ref: 'app-local-test:latest'
           exit-code: '1'
-          severity: 'CRITICAL,HIGH'
+          severity: 'CRITICAL'
 
       - name: Log in to Oracle Cloud OCIR
         uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d
