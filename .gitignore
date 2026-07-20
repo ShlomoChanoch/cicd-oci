@@ -1,0 +1,119 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+*.log
+
+# IDE e editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.iml
+.project
+.classpath
+.settings/
+*.code-workspace
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+terraform.tfvars
+terraform.plan
+*.auto.tfvars
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Docker
+*.pid
+docker-compose.override.yml
+.env
+.env.local
+.env.*.local
+
+# OCI / Cloud
+config
+~/.oci/config
+*.pem
+*.key
+*.crt
+*.p12
+oci_cli_rc
+api_key.pem
+
+# Arquivos específicos do projeto
+# sonar-project.properties Não há secrets no meu, descomente se houver no seu.
+.DS_Store
+Thumbs.db
+
+# Testes e cobertura
+.coverage
+coverage.xml
+*.cover
+.hypothesis/
+nosetests.xml
+unittest.xml
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# Arquivos de ambiente
+.envrc
+*.env
+
+# Logs e dados
+logs/
+*.log
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Backup files
+*.bak
+*.backup
+*.tmp
+
+# Kubernetes
+*.kubeconfig
+kubeconfig
+kubeconfig.*

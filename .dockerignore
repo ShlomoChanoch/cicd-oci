@@ -20,3 +20,4 @@ test_api.py
 
 # Ignorar variáveis de ambiente locais
 .env
+.terraform
