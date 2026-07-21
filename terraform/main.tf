@@ -328,3 +328,37 @@ data "kubernetes_service" "argocd_server_status" {
 
   depends_on = [helm_release.argocd]
 }
+
+resource "kubernetes_manifest" "api_argocd" {
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
+    metadata = {
+      name      = "cicd-oci"
+      namespace = helm_release.argocd.namespace
+    }
+    spec = {
+      project = "default"
+      source = {
+        repoURL        = "https://github.com/ShlomoChanoch/cicd-oci.git" # Substituta pelo seu repo público
+        targetRevision = "main"                                          # Branch (ex: main, HEAD, etc)
+        path           = "k8s"                                           # Pasta no Git onde estão os YAMLs da app
+      }
+      destination = {
+        server    = "https://kubernetes.default.svc" # O próprio cluster OKE local
+        namespace = "default"                        # Namespace onde a app vai rodar
+      }
+      syncPolicy = {
+        automated = {
+          prune    = true # Deleta do K8s se você deletar do Git
+          selfHeal = true # Recria se alguém alterar manualmente no cluster
+        }
+        syncOptions = ["CreateNamespace=true"]
+      }
+    }
+  }
+
+  depends_on = [
+    helm_release.argocd
+  ]
+}
