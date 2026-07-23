@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cicd-oci
+  namespace: default
+  labels:
+    app: cicd-oci
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cicd-oci
+  template:
+    metadata:
+      labels:
+        app: cicd-oci
+    spec:
+      containers:
+      - name: cicd-oci
+        # Substitua pela sua imagem no OCIR
+        image: iad.ocir.io/idzac8al3ypr/cicd-oci:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+        # Configuração de recursos
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        # Probas de saúde (Liveness e Readiness)
+        readinessProbe:
+          httpGet:
+            path: /docs
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /docs
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cicd-oci-service
+  namespace: default
+spec:
+  type: LoadBalancer
+  selector:
+    app: cicd-oci
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000

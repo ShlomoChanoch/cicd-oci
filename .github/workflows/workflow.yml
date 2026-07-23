@@ -10,7 +10,6 @@ env:
   OCI_REGISTRY: iad.ocir.io 
   OCI_REPOSITORY: cicd-oci
   OCI_TENANCY_NAMESPACE: ${{ vars.OCI_TENANCY_NAMESPACE }}
-  IMAGE_NAME: app-producao
 
 jobs:
   # ----------------------------------------------------

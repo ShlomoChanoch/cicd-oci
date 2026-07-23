@@ -17,9 +17,20 @@ terraform {
 
 provider "oci" {
   config_file_profile = "DEFAULT"
+  region              = var.region
 }
 
-# Decodifica o YAML do kubeconfig gerado pelo OCI
+data "terraform_remote_state" "infra" {
+  backend = "local"
+  config = {
+    path = "../01-infra/terraform.tfstate"
+  }
+}
+
+data "oci_containerengine_cluster_kube_config" "oke_kubeconfig" {
+  cluster_id = data.terraform_remote_state.infra.outputs.cluster_id
+}
+
 locals {
   kubeconfig = yamldecode(data.oci_containerengine_cluster_kube_config.oke_kubeconfig.content)
 }
@@ -31,7 +42,7 @@ provider "kubernetes" {
   exec {
     api_version = "client.authentication.k8s.io/v1beta1"
     command     = "oci"
-    args        = ["ce", "cluster", "generate-token", "--cluster-id", oci_containerengine_cluster.generated_oci_containerengine_cluster.id]
+    args        = ["ce", "cluster", "generate-token", "--cluster-id", data.terraform_remote_state.infra.outputs.cluster_id]
   }
 }
 
@@ -43,7 +54,7 @@ provider "helm" {
     exec {
       api_version = "client.authentication.k8s.io/v1beta1"
       command     = "oci"
-      args        = ["ce", "cluster", "generate-token", "--cluster-id", oci_containerengine_cluster.generated_oci_containerengine_cluster.id]
+      args        = ["ce", "cluster", "generate-token", "--cluster-id", data.terraform_remote_state.infra.outputs.cluster_id]
     }
   }
 }
